@@ -1,2 +1,2 @@
-# MINST_digit_recognition
+# MNIST_digit_recognition
 playing around with MNIST data set...
