@@ -19,7 +19,7 @@ display_step = 2
 n_inputs = 784 # 28*28
 n_classes = 10 # (0-9 digits)
 dropout = 0.75 # What use?
-sess = tf.InteractiveSession()
+session = tf.InteractiveSession()
 
 # define placeholders
 x1 = tf.placeholder(tf.float32, shape=(None, n_inputs))
@@ -42,24 +42,17 @@ def resampling(image):
 	return cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA)
 
 def find_centroid(image):
-	centx, centy = 0, 0
-	for row in xrange(len(image)):
-		for col in xrange(len(image[0])):
-			if image[row][col]:
-				centx += row*col + col
-	for row in xrange(len(image)):
-		for col in xrange(len(image[0])):
-			if image[col][row]:
-				centy += row*col + row
-	return [centx/len(image), centy/len(image)]
+	image = session.run(image)
+	print image
+	centx, centy = np.where(image!=0)
+	return [np.sum(centx)/len(image), np.sum(centy)/len(image)]
 
 def find_distance(image, centroid):
-	distance = 0.00
+	distance = []
 	for row in xrange(len(image)):
-		for col in xrange(len(image[0])):
-			if image[row][col]:
-				distance += math.sqrt(row**2 + col**2)
-	return distance
+		for col in xrange(len(image)):
+			distance.append(math.sqrt((centroid[0] - row)**2 + (centroid[1]-col)**2))
+	return tf.Variable(distance)
 
 weights1 = {
     'wc1': define_variable([6, 6, 1, 32], 'w11'), # 5x5 conv, 1 input, 40 outputs 
@@ -128,7 +121,7 @@ def network1(x, weights1, biases1, dropout = dropout):
 def network2(x, weights2, biases2, dropout = dropout):
 	x = tf.reshape(x, shape=[-1, 28, 28, 1])
 
-	x = find_distance(sess.run(x), find_centroid(sess.run(x))) 
+	x = find_distance(x, find_centroid(x)) 
 
 	fc1 = tf.add(tf.matmul(x, weights2['wc1']), biases2['bc1'])
 	fc1 = tf.nn.relu(fc1)
