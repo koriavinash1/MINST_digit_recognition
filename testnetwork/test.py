@@ -1,27 +1,38 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 import cv2
 import math
+from additional_funcs import resampling, binary_image, find_centroid, find_distance, pre_processing, alternative_centroid, distance_with_referance
 
-image = cv2.imread("1.jpg")
-print image
+image = cv2.imread("104.jpg")
+image1 = cv2.imread("88.jpg")
 
-def find_centroid():
-	global image
-	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-	image = cv2.resize(image, (4, 4), interpolation = cv2.INTER_AREA)
-	centx, centy = np.where(image!=0)
-	return [np.sum(centx)/len(image)**2, np.sum(centy)/len(image)**2]
+data = pre_processing([image])[0]
+data2 = pre_processing([image1])[0]
+# image = resampling(image)
+# image = binary_image(image)
 
-def find_distance(centroid):
-	print centroid
-	distance = []
-	for row in xrange(len(image)):
-		for col in xrange(len(image)):
-			if image[row][col]:
-				distance.append(math.sqrt((centroid[0] - row)**2 + (centroid[1]-col)**2))
-			else:
-				distance.append(0)
-	return distance
+# image1 = resampling(image1)
+# image1 = binary_image(image1)
 
-print find_distance(find_centroid())
+# image2 = cv2.imread("104.jpg")
+# image2 = resampling(image2)
+# image2 = binary_image(image2)
+
+# image = np.fft.fft(image)
+# image1 = np.fft.fft(image1)
+# image2 = np.fft.fft(image2)
+
+# # cv2.imshow("test", np.array(image, dtype = "float32"))
+# # cv2.imshow("test1", np.array(image1, dtype = "float32"))
+# # cv2.waitKey(10000)
+
+# image = np.array(image).flatten()
+# image1 = np.array(image1).flatten()
+# image2 = np.array(image2).flatten()
+img = np.array(data).reshape(28,28)
+cv2.imshow("test", img)
+cv2.waitKey(0)
+plt.plot(data, 'r', data2, 'g')
+plt.show()

@@ -3,10 +3,10 @@ import os
 import numpy as np
 import cv2
 
-train_images_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/train-images/"
-test_images_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/test-images/"
-train_labels_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/labels/trainlabels.csv"
-test_labels_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/labels/testlabels.csv"
+train_images_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/train-images/"
+test_images_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/test-images/"
+train_labels_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/labels/trainlabels.csv"
+test_labels_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/labels/testlabels.csv"
 
 
 def extract_images(folder_path, total_images):
@@ -30,17 +30,12 @@ def extract_labels(file_path, one_hot = False):
 
 
 class DataSet(object):
-    def __init__(self, images, labels, fake_data=False):
-        if fake_data:
-            self._num_examples = 10000
-        else:
-            self._num_examples = len(images)
-            images = np.multiply(images, 1.0 / 255.0)
+    def __init__(self, images, labels):
+        self._num_examples = len(images)
         self._images = images
         self._labels = labels
         self._epochs_completed = 0
         self._index_in_epoch = 0
-
     @property
     def images(self):
         return self._images
@@ -57,49 +52,30 @@ class DataSet(object):
     def epochs_completed(self):
         return self._epochs_completed
 
-    def next_batch(self, batch_size, fake_data=False):
-        if fake_data:
-            fake_image = [1.0 for _ in xrange(784)]
-            fake_label = 0
-            return [fake_image for _ in xrange(batch_size)], [
-                fake_label for _ in xrange(batch_size)]
+    def next_batch(self, batch_size):
+        if self._index_in_epoch > len(self._images)-batch_size:
+            self._index_in_epoch = 0
         start = self._index_in_epoch
         self._index_in_epoch += batch_size
-        if self._index_in_epoch > self._num_examples:
-            # Finished epoch
-            self._epochs_completed += 1
-            # Shuffle the data
-            perm = np.arange(self._num_examples)
-            np.random.shuffle(perm)
-            self._images = self._images[perm]
-            self._labels = self._labels[perm]
-            # Start next epoch
-            start = 0
-            self._index_in_epoch = batch_size
-            assert batch_size <= self._num_examples
         end = self._index_in_epoch
         return self._images[start:end], self._labels[start:end]
 
 
-def read_data_sets(fake_data=False, one_hot=False, train_image_number = 360000, test_image_number = 60000):
+def read_data_sets(one_hot=False, train_image_number = 360000, test_image_number = 60000):
     class DataSets(object):
         pass
     data_sets = DataSets()
-    if fake_data:
-        data_sets.train = DataSet([], [], fake_data=True)
-        data_sets.validation = DataSet([], [], fake_data=True)
-        data_sets.test = DataSet([], [], fake_data=True)
-        return data_sets
     VALIDATION_SIZE = 5000
+    print "extracting training images...."
     train_images = extract_images(train_images_path, train_image_number)
+    print "extracting training labels...."
     train_labels = extract_labels(train_labels_path, one_hot=one_hot)
+    print "extracting testing images...." 
     test_images = extract_images(test_images_path, test_image_number)
+    print "extracting testing labels...."
     test_labels = extract_labels(test_labels_path, one_hot=one_hot)
-    validation_images = train_images[:VALIDATION_SIZE]
-    validation_labels = train_labels[:VALIDATION_SIZE]
-    train_images = train_images[VALIDATION_SIZE:]
-    train_labels = train_labels[VALIDATION_SIZE:]
+    train_images = train_images
+    train_labels = train_labels
     data_sets.train = DataSet(train_images, train_labels)
-    data_sets.validation = DataSet(validation_images, validation_labels)
     data_sets.test = DataSet(test_images, test_labels)
     return data_sets

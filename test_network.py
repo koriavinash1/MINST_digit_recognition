@@ -6,9 +6,9 @@ from variables import x, y, weights2, biases2
 import tensorflow as tf
 import time
 # Import MNIST data
-import input_data
+from tensorflow.examples.tutorials.mnist import input_data
 # one_hot key implies lables in onehot encoding
-mnist = input_data.read_data_sets(one_hot=True, train_image_number=60000,test_image_number=10000)
+mnist = input_data.read_data_sets("dataSet", one_hot=True)
 
 session = tf.InteractiveSession()
 
@@ -38,6 +38,7 @@ init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
     sess.run(init)
+    writer = tf.summary.FileWriter('logs/', sess.graph)
     step = 1
     while step * batch_size < training_iters:
         st = time.time()
@@ -46,10 +47,9 @@ with tf.Session() as sess:
         sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
         if step % display_step == 0:
             # Calculate batch loss and accuracy
-            loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x, y: batch_y})
+            summary, loss, acc = sess.run([merged, cost, accuracy], feed_dict={x: batch_x, y: batch_y})
             print("loss= {:.6f}".format(loss) + ", Accuracy= {:.5f}".format(acc))
         step += 1
     print("Optimization Finished!")
     print st
-    test_x = pre_processing(mnist.test.images[:256])
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_x, y: mnist.test.labels[:256]}))
+    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: mnist.test.images[:256], y: mnist.test.labels[:256]}))
