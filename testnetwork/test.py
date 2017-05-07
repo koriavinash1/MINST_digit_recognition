@@ -5,8 +5,8 @@ import cv2
 import math
 from additional_funcs import resampling, binary_image, find_centroid, find_distance, pre_processing, alternative_centroid, distance_with_referance
 
-image = cv2.imread("104.jpg")
-image1 = cv2.imread("88.jpg")
+image = cv2.imread("103.jpg")
+image1 = cv2.imread("1.jpg")
 
 data = pre_processing([image])[0]
 data2 = pre_processing([image1])[0]
@@ -32,7 +32,7 @@ data2 = pre_processing([image1])[0]
 # image1 = np.array(image1).flatten()
 # image2 = np.array(image2).flatten()
 img = np.array(data).reshape(28,28)
-cv2.imshow("test", img)
-cv2.waitKey(0)
+# cv2.imshow("test", img)
+# cv2.waitKey(0)
 plt.plot(data, 'r', data2, 'g')
 plt.show()

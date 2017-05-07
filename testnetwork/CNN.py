@@ -8,7 +8,7 @@ import time
 # Import MNIST data
 import input_data
 # one_hot key implies lables in onehot encoding
-mnist = input_data.read_data_sets(one_hot=True, train_image_number=60000,test_image_number=10000)
+mnist = input_data.read_data_sets(one_hot=True)
 
 def main_net(x, weights, biases, dropout = dropout):
     x = tf.reshape(x, shape=[-1, 28, 28, 1])
@@ -52,5 +52,5 @@ with tf.Session() as sess:
         step += 1
     print("Optimization Finished!")
     print st
-    test_x = pre_processing(mnist.test.images[:256])
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_x, y: mnist.test.labels[:256]}))
+    test_x = unroll_image(mnist.test.images)
+    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_x[:1000], y: mnist.test.labels[:1000]}))
