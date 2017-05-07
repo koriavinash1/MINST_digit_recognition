@@ -1,8 +1,8 @@
 # Parameters
 learning_rate = 0.001
-training_iters = 20
-batch_size = 10
-display_step = 1
+training_iters = 200000
+batch_size = 128
+display_step = 10
 periodicity = 2
 
 # Network Parameters

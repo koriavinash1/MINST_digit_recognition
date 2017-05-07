@@ -2,7 +2,7 @@ import numpy as np
 from additional_funcs import unroll_image, initbiases, initweights, update_weights, find_error, activation
 from constants import batch_size, training_iters, n_inputs, n_classes, periodicity, display_step
 import input_data
-mnist = input_data.read_data_sets(one_hot=True, train_image_number=50,test_image_number=20)
+mnist = input_data.read_data_sets(one_hot=True)
 
 class network:
 	def __init__(self, weightsList, biasesList, categories, periodicity):
@@ -14,8 +14,9 @@ class network:
 
 	def z_to_class(self, z):
 		angle = np.mod(np.angle(z) + 2*np.pi, 2*np.pi)
-		p = int(np.floor (self.categories * self.periodicity * angle / (2*np.pi)))
-		p = np.mod(p, self.categories)
+		p = np.floor (self.categories * self.periodicity * angle / (2*np.pi))
+		p = np.mod(p, self.categories).T
+		# print "shape: " + str(p.shape) + "input: " + str(z.shape)
 		return p
 
 	def class_to_angles(self, c):
@@ -38,10 +39,11 @@ class network:
 					activation_layers.append(activation(np.dot(self.weightsList[i], data) + self.biasesList[i]))
 				else:
 					activation_layers.append(activation(np.dot(self.weightsList[i], activation_layers[i]) + self.biasesList[i]))
+			# print "trainactivation: " + str(activation_layers[len(activation_layers) -1].shape)
 			errors = find_error(self.weightsList, activation_layers[len(activation_layers) -1], self.class_to_angles(train_labels[k]))
 			self.weightsList = update_weights(self.weightsList, activation_layers, errors)
 			
-			print "error: "+str(np.array(errors,ndmin = 2).T.shape)
+			# print "error: "+str(np.array(errors,ndmin = 2).T.shape)
 			errorList.append(np.array(errors,ndmin = 2).T/n_classes)
 		return errorList
 
@@ -50,17 +52,17 @@ class network:
 		output = []
 		for k in range(len(test_data)):
 			activation_layers = []
-			data = np.array(test_data[k], dtype='complex128').T
+			data = np.array(test_data[k], ndmin = 2, dtype='complex128').T
 			activation_layers.append(data)
 			for i in range(len(self.weightsList)):
 				if i == 0:
 					activation_layers.append(activation(np.dot(self.weightsList[i], data) + self.biasesList[i]))
 				else:
-					activation_layers.append(np.dot(self.weightsList[i], activation_layers[i]) + self.biasesList[i])
-
+					activation_layers.append(activation(np.dot(self.weightsList[i], activation_layers[i]) + self.biasesList[i]))
+			# print "testactivation: " + str(activation_layers[len(activation_layers) -1].shape)
 			errorsList.append(find_error(self.weightsList, activation_layers[len(activation_layers)-1], self.class_to_angles(test_labels[k])))
 			output.append({'label':test_labels[k], 'output': self.z_to_class(activation_layers[len(activation_layers)-1])})
-		return (errorList, output)
+		return (errorsList, output)
 	pass
 
 weightsList = [
@@ -83,15 +85,15 @@ while step * batch_size < training_iters:
     batch_x, batch_y = mnist.train.next_batch(batch_size)
     batch_x = unroll_image(batch_x)
     err = net.train_network(batch_x, batch_y)
-    print np.sum(err)
-    if step % display_step == 0:
-    	print "loss= {:.6f}".format(np.sum(err)/len(err))
+    if step % 50 == 0:
+    	print "epoch.... " + str(step)
+    # if step % display_step == 0:
+    # 	print "loss= {:.6f}".format(np.sum(err)/len(err))
     step += 1
 print("Optimization Finished!")
 
-(testerr, out) = net.test_network(unroll_image(mnist.test.images[:8]), mnist.test.labels[:8])
-print testerr.shape
-print("loss in test data = {:.6f}".format(np.sum(testerr)/len(testerr)))
+(testerr, out) = net.test_network(unroll_image(mnist.test.images[:100]), mnist.test.labels[:100])
+# print("loss in test data = {:.6f}".format(np.sum(testerr)/len(testerr)))
 print "--------------------------------------------------------------------"
 for o in out:
-	print out
+	print o

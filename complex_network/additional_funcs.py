@@ -60,18 +60,19 @@ def find_error(weightsList, output, label):
 	weightsList = np.flip(weightsList, 0)
 	error_array = []
 	label = np.array(label, ndmin = 2).T
-	for i in xrange(len(weightsList) + 1):
+	for i in range(len(weightsList) + 1):
 		if i == 0:
 			error_array.append(output - label)
 		else:
+			# print (np.dot(np.array(weightsList[i-1]).T, error_array[i-1])).shape
 			error_array.append(np.dot(np.array(weightsList[i-1]).T, error_array[i-1]))
-	return np.flip(error_array, 0)
+	# print len(error_array[0]), len(error_array[1]), len(error_array[2]) 
+	return error_array
 
 def update_weights(weightsList, activationList, errorList):
 	weightsList = np.flip(weightsList, 0)
-	errorList = np.flip(errorList, 0)
 	activationList = np.flip(activationList, 0)
 	for i in xrange(len(weightsList)):
 		# print weightsList[i].shape, errorList[i].shape, np.divide(np.conj(activationList[i+1]), np.abs(activationList[i+1])).T.shape
-		weightsList[i] += np.dot(errorList[i], np.divide(np.conj(activationList[i+1]), np.abs(activationList[i+1])+0.5).T) / len(activationList[i])
+		np.add(weightsList[i], np.dot(errorList[i], np.divide(np.conj(activationList[i+1]), np.abs(activationList[i+1])+0.5).T) / len(activationList[i]))
 	return np.flip(weightsList, 0)
