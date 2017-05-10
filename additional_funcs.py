@@ -1,44 +1,78 @@
-from iteration_utilities import deepflatten
-import tensorflow as tf
 import numpy as np
+from constants import learning_rate
 import math
 import cv2
 
-session = tf.InteractiveSession()
+# convert real to complex image..
+def real2complex(image):
+	image = np.fft.fft2(image)
+	fshift = np.fft.fftshift(image)
+	rows, cols = image.shape
+	crow,ccol = rows/2 , cols/2
+	fshift[crow-30:crow+30, ccol-30:ccol+30] = 0	
+	return fshift
 
-# miscill... functions
-def define_variable(shape, name): 
-    return tf.Variable(tf.truncated_normal(shape, name = name))
+# returns unit vector
+def complex2polarcoordinates(arrays):
+	polar_array = []
+	for array in arrays:
+		polar_array.append(np.exp(1j * np.angle(array)))
+	return polar_array
 
 def resampling(image):
 	return cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA)
 
-def binary_image(image):
+def grey2binary(image):
+	image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 	ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
 	return thresh
 
-def find_centroid(image):
-	centx, centy = np.where(image!=0)
-	return [np.sum(centx)/len(image)**2, np.sum(centy)/len(image)**2]
-
-def find_distance(image, centroid):
-	cv2.imshow("tmp",image)
-	distances = []
-	for row in xrange(len(image)):
-		for col in xrange(len(image)):
-			if image[row][col] == 1:
-				distances.append(math.sqrt((centroid[0] - row)**2 + (centroid[1]-col)**2))
-			else:
-				distances.append(0)
-	print len(distances)
-	return distances
-
-def pre_processing(images):
-	dtype = "float32"
+def unroll_image(images):
 	processed = []
 	for image in images:
-		tmp = resampling(image)
-		final_img = binary_image(tmp)
-		processed.append(find_distance(final_img, find_centroid(final_img)))
-	print len(processed)
-	return np.array(processed, dtype=dtype)
+		reshapeImage = resampling(image)
+		binaryImage = grey2binary(reshapeImage)
+		# cv2.imshow("test", binaryImage)
+		# cv2.waitKey(800)
+		complexImage =  real2complex(binaryImage)
+		processed.append(np.exp(1j * np.angle(np.array(complexImage, dtype="complex128").flatten())))
+	return processed
+
+
+
+##### network functions.........
+
+
+def initweights(rows, cols):
+	weights = np.random.uniform(-1.0, 1.0, (cols, rows))
+	weights = np.array(weights, ndmin = 2, dtype = 'complex128')
+	weights += 1j * np.random.uniform(-1.0, 1.0, (cols, rows))
+	return weights
+
+def initbiases(cols):
+	weights = np.random.uniform(-1.0, 1.0, (cols, 1))
+	weights = np.array(weights, ndmin = 1, dtype = 'complex128')
+	weights += 1j * np.random.uniform(-1.0, 1.0, (cols, 1))
+	return weights
+
+def activation(array):
+	sigmoid = np.divide(1, np.add(1, np.exp(-np.abs(array)))) 
+	out = np.multiply(sigmoid, np.exp(1j * np.angle(array)))
+	print "activation:   ", max((out+1)/2)
+	return (out + 1)/2
+
+def find_error(weightsList, nodes, label):
+	error_array = []
+	error_array.append(np.sqrt(np.sum(np.square(np.subtract(nodes[len(nodes)-1], label).T))))
+	# print nodes[len(nodes)-1], label
+	# print weightsList[len(weightsList)-1].T.shape, error_array[0].shape
+	for i in range(len(weightsList)):
+		error_array.append(np.dot(weightsList[len(weightsList)-i-1].T, error_array[i]))
+	return error_array
+
+def update_weights(weightsList, activationList, errorList):
+	for i in xrange(len(weightsList)):
+		# print weightsList[i].shape, np.array(errorList[len(weightsList)-i], ndmin=2).shape, np.array(np.conj(activationList[i+1]), ndmin=2).shape
+		np.add(weightsList[i], learning_rate * np.dot(np.array(errorList[len(weightsList)-i], ndmin=2), np.array(np.conj(activationList[i+1]), ndmin=2)).T/ len(activationList[i]))
+	# print weightsList[1]
+	return weightsList

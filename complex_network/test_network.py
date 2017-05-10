@@ -16,8 +16,7 @@ def network2(xr, xi, weights2, biases2, dropout = dropout):
 	# x = tf.reshape(x, shape=[-1, 28, 28, 1])
 	# x = find_distance(session.run(x), find_centroid(session.run(x))) 
 
-	fcr1 = tf.add(tf.matmul(xr, weights2['wc1']), biases2['bc1'])
-    fci1 = tf.add(tf.matmul(xi, weights2['wc1']), biases2['bc1'])
+	fc1 = tf.add(tf.matmul(xr, weights2['wc1']), biases2['bc1'])
 	fc1 = tf.nn.relu(fc1)
 
 	fc2 = tf.add(tf.matmul(fc1, weights2['wc2']), biases2['bc2'])

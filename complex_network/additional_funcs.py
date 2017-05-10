@@ -32,8 +32,10 @@ def unroll_image(images):
 	for image in images:
 		reshapeImage = resampling(image)
 		binaryImage = grey2binary(reshapeImage)
+		# cv2.imshow("test", binaryImage)
+		# cv2.waitKey(800)
 		complexImage =  real2complex(binaryImage)
-		processed.append(np.array(complexImage, dtype="complex128").flatten())
+		processed.append(np.exp(1j * np.angle(np.array(complexImage, dtype="complex128").flatten())))
 	return processed
 
 
@@ -54,25 +56,23 @@ def initbiases(cols):
 	return weights
 
 def activation(array):
-	return np.multiply(np.tanh(np.abs(array)), np.exp(1j * np.angle(array)))
+	sigmoid = np.divide(1, np.add(1, np.exp(-np.abs(array)))) 
+	out = np.multiply(sigmoid, np.exp(1j * np.angle(array)))
+	print "activation:   ", max((out+1)/2)
+	return (out + 1)/2
 
-def find_error(weightsList, output, label):
-	weightsList = np.flip(weightsList, 0)
+def find_error(weightsList, nodes, label):
 	error_array = []
-	label = np.array(label, ndmin = 2).T
-	for i in range(len(weightsList) + 1):
-		if i == 0:
-			error_array.append(output - label)
-		else:
-			# print (np.dot(np.array(weightsList[i-1]).T, error_array[i-1])).shape
-			error_array.append(np.dot(np.array(weightsList[i-1]).T, error_array[i-1]))
-	# print len(error_array[0]), len(error_array[1]), len(error_array[2]) 
+	error_array.append(np.sqrt(np.sum(np.square(np.subtract(nodes[len(nodes)-1], label).T))))
+	# print nodes[len(nodes)-1], label
+	# print weightsList[len(weightsList)-1].T.shape, error_array[0].shape
+	for i in range(len(weightsList)):
+		error_array.append(np.dot(weightsList[len(weightsList)-i-1].T, error_array[i]))
 	return error_array
 
 def update_weights(weightsList, activationList, errorList):
-	weightsList = np.flip(weightsList, 0)
-	activationList = np.flip(activationList, 0)
 	for i in xrange(len(weightsList)):
-		# print weightsList[i].shape, errorList[i].shape, np.divide(np.conj(activationList[i+1]), np.abs(activationList[i+1])).T.shape
-		np.add(weightsList[i], np.dot(errorList[i], np.divide(np.conj(activationList[i+1]), np.abs(activationList[i+1])+0.5).T) / len(activationList[i]))
-	return np.flip(weightsList, 0)
+		# print weightsList[i].shape, np.array(errorList[len(weightsList)-i], ndmin=2).shape, np.array(np.conj(activationList[i+1]), ndmin=2).shape
+		np.add(weightsList[i], learning_rate * np.dot(np.array(errorList[len(weightsList)-i], ndmin=2), np.array(np.conj(activationList[i+1]), ndmin=2)).T/ len(activationList[i]))
+	# print weightsList[1]
+	return weightsList

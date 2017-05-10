@@ -1,11 +1,12 @@
 # Parameters
-learning_rate = 0.001
-training_iters = 200000
-batch_size = 128
-display_step = 10
+learning_rate = 0.01
+epochs = 20
+batch_size = 10
+training_iters = batch_size * epochs
+display_step = 1
 periodicity = 2
 
 # Network Parameters
 n_inputs = 784 # 28*28
-n_classes = 10 # (0-9 digits)
+n_classes = 1
 dropout = 0.75 
