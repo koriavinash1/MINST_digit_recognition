@@ -67,7 +67,7 @@ def find_error(weightsList, nodes, label):
 	# print nodes[len(nodes)-1], label
 	# print weightsList[len(weightsList)-1].T.shape, error_array[0].shape
 	for i in range(len(weightsList)):
-		error_array.append(np.dot(weightsList[len(weightsList)-i-1].T, error_array[i]))
+		error_array.append(np.dot(np.dot(weightsList[len(weightsList)-i-1].T, error_array[i])), np.square(np.sech(nodes[len(weightsList)-1-i])))
 	return error_array
 
 def update_weights(weightsList, activationList, errorList):

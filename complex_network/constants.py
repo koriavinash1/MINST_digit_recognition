@@ -1,7 +1,7 @@
 # Parameters
 learning_rate = 0.01
-epochs = 20
-batch_size = 10
+epochs = 2000
+batch_size = 0100
 training_iters = batch_size * epochs
 display_step = 1
 periodicity = 2

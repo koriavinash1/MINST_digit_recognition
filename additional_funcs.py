@@ -23,8 +23,10 @@ def resampling(image):
 	return cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA)
 
 def grey2binary(image):
+	# print "image", image
 	image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 	ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+	# print thresh
 	return thresh
 
 def unroll_image(images):
@@ -36,7 +38,7 @@ def unroll_image(images):
 		# cv2.waitKey(800)
 		complexImage =  real2complex(binaryImage)
 		processed.append(np.exp(1j * np.angle(np.array(complexImage, dtype="complex128").flatten())))
-	return processed
+	return (np.real(processed), np.imag(processed))
 
 
 
