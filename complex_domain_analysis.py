@@ -3,14 +3,15 @@ import numpy as np
 import cv2
 import input_data
 from additional_funcs import unroll_image
-mnist = input_data.read_data_sets(one_hot = True)
+mnist = input_data.read_data_sets(one_hot = True, train_image_number=60000, test_image_number=1000)
 
-learning_rate = 0.001
-display_step = 10
-epoch = 2000
+learning_rate = 0.01
+epoch = 200
+test_examples = 256
 batch_size = 128
+display_step = batch_size/2
 categories = 10
-periodicity = 2
+periodicity = 1
 
 n_inputs = 784 
 n_classes = 10
@@ -22,6 +23,7 @@ image_imag = tf.placeholder(dtype = tf.float32, shape = (None, n_inputs), name =
 label_real = tf.placeholder(dtype = tf.float32, shape = (None,n_classes), name = "expected_output_real")
 label_imag = tf.placeholder(dtype = tf.float32, shape = (None,n_classes), name = "expected_output_imag")
 
+# label = tf.placeholder(dtype = tf.float32, shape = (None,n_classes), name="expected_output_image")
 # miscill... functions
 
 def activation(input_data, weights, biases):
@@ -30,8 +32,8 @@ def activation(input_data, weights, biases):
     return {'real':real, 'imaginary': imag}
 
 def nonlinear(activated_layer):
-    real = tf.tanh(activated_layer['real'])
-    imag = tf.tanh(activated_layer['imaginary'])
+    real = tf.sigmoid(activated_layer['real'])
+    imag = tf.sigmoid(activated_layer['imaginary'])
     return {'real': real, 'imaginary': imag}
 
 def z2class(out):
@@ -47,7 +49,6 @@ def class2z(batch_y):
 		tmp = np.multiply(np.add(a, 0.5), np.dot(np.arange(categories), periodicity * 2 * 3.14))
 		real.append(np.cos(tmp))
 		imag.append(np.sin(tmp))
-	print "real: ", real + "imaginary: ",imag
 	return {'real': real, 'imaginary': imag}
 
 def define_variable(shape, name):
@@ -104,31 +105,37 @@ def main_network(x, weights, biases):
     return out
 
 prediction = main_network({'real':image_real, 'imaginary': image_imag}, {'real':weights_real, 'imaginary':weights_imaginary}, {'real':biases_real, 'imaginary':biases_imaginary})
-# prediction = z2class(prediction)
+
+# prediction = tf.sqrt(tf.add(tf.pow(prediction['real'], 2), tf.pow(prediction['imaginary'], 2)))
 
 # define real and imaginary components of loss function...
 real_cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = prediction['real'], labels = label_real))
 imaginary_cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = prediction['imaginary'], labels = label_imag))
 
-#net cost is peoduct of both
-cost = real_cost * imaginary_cost
+	# real_cost = tf.reduce_mean(tf.pow(label_real - prediction['real'], 2))
+	# imaginary_cost = tf.reduce_mean(tf.pow(label_imag - prediction['imaginary'], 2))
+
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = prediction, labels = label))
+
+
 
 # optimizer for real and imaginary components of loss function...
 real_optimizer = tf.train.AdamOptimizer(learning_rate).minimize((real_cost - imaginary_cost))
 imaginary_optimizer = tf.train.AdamOptimizer(learning_rate).minimize((imaginary_cost + real_cost))
 
+	# real_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(real_cost - imaginary_cost)
+	# imaginary_optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(imaginary_cost + real_cost)
+
+	# optimizer = tf.train.AdamOptimizer(learning_rate).minimize((cost))
+
 # model evaluation correct real and imaginary prediction ..
 correct_real_prediction = tf.equal(tf.argmax(prediction['real'], 1), tf.argmax(label_real, 1))
-correct_imaginary_prediction = tf.equal(tf.argmax(prediction['imaginary'], 1), tf.argmax(label_imag, 1))
+correct_imag_prediction = tf.equal(tf.argmax(prediction['imaginary'], 1), tf.argmax(label_imag, 1))
 
 # real and imaginary accuracy components...
 real_acc = tf.reduce_mean(tf.cast(correct_real_prediction, tf.float32))
-imag_acc = tf.reduce_mean(tf.cast(correct_imaginary_prediction, tf.float32))
+imag_acc = tf.reduce_mean(tf.cast(correct_imag_prediction, tf.float32))
 
-# final accuracy is product of both real and imaginary components.. 
-accuracy = real_acc * imag_acc
-
-# all tf variable initialization ...
 init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
@@ -137,19 +144,20 @@ with tf.Session() as sess:
     while step < epoch * batch_size:
         batch_x, batch_y = mnist.train.next_batch(batch_size)
         Rbatch_x, Ibatch_x = unroll_image(batch_x) 
-        batch_y = class2z(batch_y)
-        # print "input", sess.run(batch_x)
-        sess.run([real_optimizer, imaginary_optimizer], feed_dict={image_real:Rbatch_x, label_real: batch_y['real'], image_imag: Ibatch_x, label_imag: batch_y['imaginary']})
+        Rbatch_y, Ibatch_y = np.real(np.fft.fft(batch_y)), np.imag(np.fft.fft(batch_y))
+
+        # sess.run([real_optimizer, imaginary_optimizer], feed_dict={image_real:Rbatch_x, label_real: batch_y['real'], image_imag: Ibatch_x, label_imag: batch_y['imaginary']})
         
+        sess.run([real_optimizer, imaginary_optimizer], feed_dict={image_real: Rbatch_x, image_imag: Ibatch_x, label_real: Rbatch_y, label_imag: Ibatch_y})
+
         if step % display_step == 0:
-            loss, acc = sess.run([cost, accuracy], feed_dict={image_real:Rbatch_x, label_real: batch_y['real'], image_imag: Ibatch_x, label_imag: batch_y['imaginary']})
-            print("loss= {:.6f}".format(loss) + ", Accuracy= {:.5f}".format(acc))
+            Rloss, Racc, Iloss, Iacc = sess.run([real_cost, real_acc, imaginary_cost, imag_acc], feed_dict={image_real:Rbatch_x, image_imag: Ibatch_x, label_real: Rbatch_y, label_imag: Ibatch_y})
+            print("loss= {:.6f}".format(Rloss*Iloss) + ", Accuracy= {:.5f}".format(Racc*Iacc))
         step += 1
         
     print("Optimization Finished!")
     
-    tRimages, tIimages = unroll_image(mnist.test.images[:10])
-    tlabels = class2z(mnist.test.labels[:10])
+    tRimages, tIimages = unroll_image(mnist.test.images[:test_examples])
+    tRlabels, tIlabels = np.real(np.fft.fft(mnist.test.labels[:test_examples])), np.imag(np.fft.fft(mnist.test.labels[:test_examples]))
 
-
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={image_real: tRimages, label_real: tlabels['real'], image_imag: tIimages, label_imag: tlabels['imaginary']}))
+    print("Testing Accuracy:", sess.run(real_acc, imag_acc, feed_dict={image_real: tRimages, image_imag: tIimages, label_imag: tIlabels, label_real: tRlabels }))

@@ -20,7 +20,7 @@ def complex2polarcoordinates(arrays):
 	return polar_array
 
 def resampling(image):
-	return cv2.resize(image, (28, 28), interpolation = cv2.INTER_AREA)
+	return cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (28, 28), interpolation = cv2.INTER_AREA)
 
 def grey2binary(image):
 	# print "image", image
@@ -33,14 +33,20 @@ def unroll_image(images):
 	processed = []
 	for image in images:
 		reshapeImage = resampling(image)
-		binaryImage = grey2binary(reshapeImage)
+		# binaryImage = grey2binary(reshapeImage)
 		# cv2.imshow("test", binaryImage)
 		# cv2.waitKey(800)
-		complexImage =  real2complex(binaryImage)
+		complexImage =  real2complex(reshapeImage)
 		processed.append(np.exp(1j * np.angle(np.array(complexImage, dtype="complex128").flatten())))
 	return (np.real(processed), np.imag(processed))
 
-
+def pre_processing(images):
+	processed = []
+	for image in images:
+		tmp = resampling(image)
+		processed.append(np.divide(np.array(tmp).flatten(), 255))
+		# print len(processed)
+	return processed
 
 ##### network functions.........
 

@@ -3,10 +3,10 @@ import os
 import numpy as np
 import cv2
 
-train_images_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/train-images/"
-test_images_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/test-images/"
-train_labels_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/labels/trainlabels.csv"
-test_labels_path = "/media/koriavinash/New Volume1/Research/MNIST_database/newMNIST/labels/testlabels.csv"
+train_images_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/train-images/"
+test_images_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/test-images/"
+train_labels_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/labels/trainlabels.csv"
+test_labels_path = "/media/koriavinash/New Volume/Research/MNIST_database/newMNIST/labels/testlabels.csv"
 
 
 def extract_images(folder_path, total_images):
