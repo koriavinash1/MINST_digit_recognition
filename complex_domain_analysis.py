@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import input_data
-from additional_funcs import unroll_image
 mnist = input_data.read_data_sets(one_hot = True, train_image_number=60000, test_image_number=1000)
 
 learning_rate = 0.01
@@ -16,7 +15,9 @@ periodicity = 1
 n_inputs = 784 
 n_classes = 10
 
-# placeholders
+print "LEARNING RATE = {}".format(learning_rate)+", BATCH SIZE = {}".format(batch_size)+", EPOCHS = {}".format(epoch)
+print "####################################################################"
+
 
 image_real = tf.placeholder(dtype = tf.float32, shape = (None, n_inputs), name = "real_input")
 image_imag = tf.placeholder(dtype = tf.float32, shape = (None, n_inputs), name = "imaginary_input")
@@ -25,6 +26,17 @@ label_imag = tf.placeholder(dtype = tf.float32, shape = (None,n_classes), name =
 
 # label = tf.placeholder(dtype = tf.float32, shape = (None,n_classes), name="expected_output_image")
 # miscill... functions
+
+def unroll_image(images):
+    processed_images = []
+    for image in images:
+        channel_1 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(channel_1, (28, 28), interpolation = cv2.INTER_CUBIC)
+        unrolled = np.array(resized, dtype="float").flatten()
+        normalized = np.divide(unrolled, 255)
+        complexdomain = np.fft.fft(normalized)
+        processed_images.append(complexdomain)
+    return (np.real(processed_images), np.imag(processed_images))
 
 def activation(input_data, weights, biases):
     real = tf.add(tf.subtract(tf.matmul(input_data['real'], weights['real']), tf.matmul(input_data['imaginary'], weights['imaginary'])), biases['real'])
